@@ -12,7 +12,13 @@ import friendsRouter from "./controllers/friends.js";
 const app = express();
 const PORT = 5000;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.ORIGIN || "https://chatterbox-self.vercel.app/",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.static("public"));
 app.use("/users", usersRouter);

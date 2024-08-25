@@ -4,7 +4,7 @@ import User from "./models/User.js";
 const setupSocket = (server) => {
   const io = new Server(server, {
     cors: {
-      origin: process.env.ORIGIN || "http://localhost:3000",
+      origin: process.env.ORIGIN || "https://chatterbox-self.vercel.app/",
       methods: ["GET", "POST"],
       credentials: true,
     },

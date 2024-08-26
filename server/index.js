@@ -14,7 +14,7 @@ const PORT = 5000;
 
 app.use(
   cors({
-    origin: process.env.ORIGIN || "https://chatterbox-self.vercel.app/",
+    origin: process.env.ORIGIN || "https://chatterbox-self.vercel.app",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
   })

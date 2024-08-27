@@ -62,7 +62,7 @@ const GroupInfoSheet = ({ isGroup, name, image, chatId }: Props) => {
 
           {chat.members.map((member: any) => {
             return (
-              <Card className="flex p-2 items-center gap-3">
+              <Card className="flex p-2 items-center gap-3" key={member._id}>
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={member.image}></AvatarImage>
                   <AvatarFallback>

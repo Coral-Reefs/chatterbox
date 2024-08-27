@@ -41,7 +41,7 @@ const VoiceMessage = ({ file }: Props) => {
         waveform.current.destroy();
       }
     };
-  }, []);
+  }, [isWaveSurferReady]);
 
   useEffect(() => {
     const audioURL = `${process.env.NEXT_PUBLIC_SERVER_URL}/${file.name}`;

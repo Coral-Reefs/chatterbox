@@ -103,7 +103,7 @@ const VoiceMessage = ({ file }: Props) => {
           )}
         </Button>
         <div>
-          <div className="w-60" ref={waveformRef} />
+          <div className="w-full sm:w-60" ref={waveformRef} />
           {audioMessage && (
             <span className="text-xs opacity-70">
               {isPlaying

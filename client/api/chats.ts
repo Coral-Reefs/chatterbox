@@ -42,6 +42,18 @@ export const useChatActions = () => {
     return res.data;
   };
 
+  const addMember = async ({ chatId, members }: any) => {
+    const token = await session?.getToken();
+    const res = await axios.post(`${url}/group/${chatId}`, members, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    socket.emit("newMessage", res.data);
+    socket.emit("refreshGroup", res.data);
+    return res.data;
+  };
+
   const deleteGroup = async (id: any) => {
     const token = await session?.getToken();
     const res = await axios.delete(`${url}/${id}`, {
@@ -49,7 +61,7 @@ export const useChatActions = () => {
         Authorization: `Bearer ${token}`,
       },
     });
-    socket.emit("refreshGroup", res.data);
+    socket.emit("deleteGroup", res.data);
     return res.data;
   };
 
@@ -60,7 +72,9 @@ export const useChatActions = () => {
         Authorization: `Bearer ${token}`,
       },
     });
-    // socket.emit("leaveGroup", res.data);
+
+    socket.emit("newMessage", res.data);
+    socket.emit("refreshGroup", res.data);
     return res.data;
   };
 
@@ -81,5 +95,6 @@ export const useChatActions = () => {
     createGroup,
     deleteGroup,
     leaveGroup,
+    addMember,
   };
 };

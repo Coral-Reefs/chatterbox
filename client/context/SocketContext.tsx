@@ -45,6 +45,7 @@ export const SocketProvider = ({ children }: any) => {
         console.log("Received message");
         queryClient.invalidateQueries({ queryKey: ["messages"] });
         queryClient.invalidateQueries({ queryKey: ["chats"] });
+        queryClient.invalidateQueries({ queryKey: ["chat"] });
       };
       const removedFriendHandler = () => {
         console.log("Deleted friend");

@@ -93,6 +93,15 @@ const setupSocket = (server) => {
     members.forEach((member) => {
       const memberSocketId = userSocketMap.get(member);
       if (memberSocketId) {
+        io.to(memberSocketId).emit("receiveMessage"); // to refresh the chats
+      }
+    });
+  };
+  const deleteGroupHandler = (data) => {
+    const members = data.chat.members;
+    members.forEach((member) => {
+      const memberSocketId = userSocketMap.get(member);
+      if (memberSocketId) {
         io.to(memberSocketId).emit("removedFriend"); // to refresh the chats
       }
     });
@@ -125,6 +134,7 @@ const setupSocket = (server) => {
     socket.on("rejectVideoCall", rejectVideoCall);
     socket.on("acceptIncomingCall", acceptIncomingCall);
     socket.on("refreshGroup", refreshGroupHandler);
+    socket.on("deleteGroup", deleteGroupHandler);
 
     socket.on("disconnect", () => disconnect);
   });

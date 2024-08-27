@@ -31,7 +31,6 @@ const ChatPage = ({ params: { chatId } }: Props) => {
   const [removeFriendDialog, setRemoveFriendDialog] = useState(false);
   const [deleteGroupDialog, setDeleteGroupDialog] = useState(false);
   const [leaveGroupDialog, setLeaveGroupDialog] = useState(false);
-  const [callType, setCallType] = useState<"voice" | "video" | null>(null);
   const [editing, setEditing] = useState<{
     _id: string;
     type: string;
@@ -98,6 +97,7 @@ const ChatPage = ({ params: { chatId } }: Props) => {
         }
         currentChatUser={chat.otherMember || chat.members}
         isGroup={chat.isGroup}
+        chatId={chatId}
       />
       <Body
         setEditing={setEditing}

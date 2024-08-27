@@ -10,6 +10,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { toast } from "sonner";
 import WaveSurfer from "wavesurfer.js";
 
 type Props = {
@@ -30,6 +31,7 @@ const CaptureAudio = ({ hide, replying, setReplying }: Props) => {
   const [totalDuration, setTotalDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [renderedAudio, setRenderedAudio] = useState<File | null>(null);
+  const [devicesError, setDevicesError] = useState<string | null>(null);
 
   const audioRef = useRef<any>(null);
   const mediaRecorderRef = useRef<any>(null);
@@ -106,6 +108,9 @@ const CaptureAudio = ({ hide, replying, setReplying }: Props) => {
       })
       .catch((e) => {
         console.log(e);
+        setIsRecording(false);
+        toast.error("Cannot find audio devices");
+        hide(false);
       });
   };
   const handleStopRecording = (): Promise<void> => {
@@ -124,12 +129,33 @@ const CaptureAudio = ({ hide, replying, setReplying }: Props) => {
           const audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
           const audioFile = new File([audioBlob], "recording.mp3");
           setRenderedAudio(audioFile);
+          stopAudioDevices();
           resolve();
         });
+
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+        waveform.stop();
       } else {
         resolve();
       }
     });
+  };
+
+  const stopAudioDevices = () => {
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      navigator.mediaDevices.enumerateDevices().then((devices) => {
+        devices.forEach((device) => {
+          if (device.kind === "audioinput") {
+            navigator.mediaDevices
+              .getUserMedia({ [device.kind.split("input")[0]]: true })
+              .then((stream) => {
+                stream.getTracks().forEach((track) => track.stop());
+              });
+          }
+        });
+      });
+    }
   };
 
   useEffect(() => {
@@ -214,7 +240,11 @@ const CaptureAudio = ({ hide, replying, setReplying }: Props) => {
             </div>
           )
         )}
-        <div className="w-60" ref={waveformRef} hidden={isRecording} />
+        <div
+          className="w-full lg:w-60"
+          ref={waveformRef}
+          hidden={isRecording}
+        />
         {recordedAudio && isPlaying && (
           <span>{formatTime(currentPlaybackTime)}</span>
         )}

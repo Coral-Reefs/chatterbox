@@ -25,14 +25,6 @@ const Container = ({ data }: Props) => {
   const [callAccepted, setCallAccepted] = useState(false);
   const [token, setToken] = useState<string | undefined>(undefined);
   const { getToken } = useUsersActions();
-  const [zgVar, setZgVar] = useState<ZegoExpressEngine | undefined>(undefined);
-  const [localStream, setLocalStream] = useState<MediaStream | undefined>(
-    undefined
-  );
-  const [publishStream, setPublishStream] = useState<string | undefined>(
-    undefined
-  );
-  const [cameraError, setCameraError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!socketListener) return;
@@ -61,104 +53,9 @@ const Container = ({ data }: Props) => {
     }
   }, [callAccepted]);
 
-  // useEffect(() => {
-  //   const startCall = async () => {
-  //     try {
-  //       import("zego-express-engine-webrtc").then(
-  //         async ({ ZegoExpressEngine }) => {
-  //           const zg = new ZegoExpressEngine(
-  //             parseInt(process.env.NEXT_PUBLIC_ZEGO_APP_ID!),
-  //             process.env.NEXT_PUBLIC_ZEGO_SERVER_ID!
-  //           );
-  //           setZgVar(zg);
-
-  //           zg.on(
-  //             "roomStreamUpdate",
-  //             async (room, updateType, streamList, extendedData) => {
-  //               if (updateType === "ADD") {
-  //                 const rmVideo = document.getElementById("remote-video");
-  //                 const vd = document.createElement(
-  //                   data.callType === "video" ? "video" : "audio"
-  //                 ) as any;
-  //                 vd.id = streamList[0].streamID;
-  //                 vd.autoplay = true;
-  //                 vd.playsInline = true;
-  //                 vd.muted = false;
-  //                 if (rmVideo) {
-  //                   rmVideo.appendChild(vd);
-  //                 }
-  //                 zg.startPlayingStream(streamList[0].streamID, {
-  //                   audio: true,
-  //                   video: data.callType === "video" ? true : false,
-  //                 }).then((stream) => (vd.srcObject = stream));
-  //               } else if (
-  //                 updateType === "DELETE" &&
-  //                 zg &&
-  //                 localStream &&
-  //                 streamList[0].streamID
-  //               ) {
-  //                 zg.destroyStream(localStream);
-  //                 zg.stopPublishingStream(streamList[0].streamID);
-  //                 zg.logoutRoom(data.roomId.toString());
-  //                 dispatch({ type: reducerCases.END_CALL });
-  //               }
-  //             }
-  //           );
-
-  //           await zg.loginRoom(
-  //             data.roomId.toString(),
-  //             token!,
-  //             {
-  //               userID: user!.id,
-  //               userName: user?.firstName + " " + user?.lastName,
-  //             },
-  //             { userUpdate: true }
-  //           );
-
-  //           try {
-  //             const localStream = await zg.createStream({
-  //               camera: {
-  //                 audio: true,
-  //                 video: data.callType === "video" ? true : false,
-  //               },
-  //             });
-  //             setLocalStream(localStream);
-
-  //             const localVideo = document.getElementById("local-audio");
-  //             const videoElement = document.createElement(
-  //               data.callType === "video" ? "video" : "audio"
-  //             ) as any;
-  //             videoElement.id = "video-local-zego";
-  //             videoElement.className = "h-28 w-32";
-  //             videoElement.autoplay = true;
-  //             videoElement.muted = true;
-  //             videoElement.playsInline = true;
-  //             localVideo?.appendChild(videoElement);
-
-  //             videoElement.srcObject = localStream;
-
-  //             const streamID = "123" + Date.now();
-  //             setPublishStream(streamID);
-  //             zg.startPublishingStream(streamID, localStream);
-  //           } catch (error) {
-  //             setCameraError("No camera detected or permission denied.");
-  //             console.error("Error creating local stream:", error);
-  //           }
-  //         }
-  //       );
-  //     } catch (error) {
-  //       console.error("Error initializing call:", error);
-  //     }
-  //   };
-
-  //   if (token) {
-  //     startCall();
-  //   }
-  // }, [token]);
-
   const generateKitToken = () => {
     const currentTimestamp = Math.floor(Date.now() / 1000);
-    const expiredTimestamp = currentTimestamp + 7200; // Token validity period (e.g., 2 hours)
+    const expiredTimestamp = currentTimestamp + 7200;
     const token = ZegoUIKitPrebuilt.generateKitTokenForTest(
       parseInt(process.env.NEXT_PUBLIC_ZEGO_APP_ID!),
       process.env.NEXT_PUBLIC_ZEGO_SERVER_ID!,
@@ -176,6 +73,9 @@ const Container = ({ data }: Props) => {
       const zp = ZegoUIKitPrebuilt.create(myToken);
       zp.joinRoom({
         container: document.querySelector("#root") as any,
+        ...(data.callType === "voice"
+          ? { turnOnCameraWhenJoining: false }
+          : {}),
         sharedLinks: [
           {
             url:
@@ -192,17 +92,41 @@ const Container = ({ data }: Props) => {
         onLeaveRoom: () => {
           endCall();
           zp.destroy();
+          stopMediaDevices();
         },
         onUserLeave(users) {
-          if (users.length == 1) zp.destroy();
+          if (users.length == 1) {
+            zp.destroy();
+            stopMediaDevices();
+          }
         },
       });
+
+      const stopMediaDevices = () => {
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          navigator.mediaDevices.enumerateDevices().then((devices) => {
+            devices.forEach((device) => {
+              if (
+                device.kind === "videoinput" ||
+                device.kind === "audioinput"
+              ) {
+                navigator.mediaDevices
+                  .getUserMedia({ [device.kind.split("input")[0]]: true })
+                  .then((stream) => {
+                    stream.getTracks().forEach((track) => track.stop());
+                  });
+              }
+            });
+          });
+        }
+      };
+
+      return () => {
+        socketListener?.off("rejectVoiceCall");
+        socketListener?.off("rejectVideoCall");
+        stopMediaDevices();
+      };
     }
-    return () => {
-      // Remove event listeners
-      socketListener?.off("rejectVoiceCall");
-      socketListener?.off("rejectVideoCall");
-    };
   }, [callAccepted, token, data, socketListener]);
 
   const endCall = () => {
@@ -219,21 +143,17 @@ const Container = ({ data }: Props) => {
   return (
     <div className="h-screen w-screen flex flex-col items-center justify-center">
       <div className="flex flex-col gap-3 items-center">
-        {(!callAccepted || data.callType === "voice") && (
-          <span className="text-5xl">
-            {data.firstName} {data.lastName}
-          </span>
+        {!callAccepted && (
+          <>
+            <h4 className="text-5xl">
+              {data.firstName} {data.lastName}
+            </h4>
+            <p className="animate-pulse text-lg">Calling...</p>
+          </>
         )}
-        <span className="text-lg">
-          {callAccepted ? (
-            data.callType !== "video" && "Ongoing call"
-          ) : (
-            <span className="animate-pulse">Calling...</span>
-          )}
-        </span>
       </div>
 
-      {(!callAccepted || data.callType === "voice") && (
+      {!callAccepted && (
         <>
           <div className="my-24">
             <Avatar className="w-72 h-72">
@@ -252,14 +172,7 @@ const Container = ({ data }: Props) => {
         </>
       )}
 
-      {callAccepted && (
-        <div
-          id="root"
-          className={cn("w-screen h-screen", {
-            hidden: data.callType === "voice",
-          })}
-        ></div>
-      )}
+      {callAccepted && <div id="root" className="w-screen h-screen"></div>}
     </div>
   );
 };

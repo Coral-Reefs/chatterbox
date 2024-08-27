@@ -6,6 +6,10 @@ import isAuth from "../middleware/auth.js";
 import fs from "fs";
 import path from "path";
 import multer from "multer";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -79,13 +83,14 @@ router.put("/:id", isAuth, async (req, res) => {
 router.delete("/:id", isAuth, async (req, res) => {
   try {
     const message = await Message.findById(req.params.id);
+    console.log(message);
     if (!message || message.user.toString() != req.user._id)
       return res.status(400).json({ msg: "You can't delete this message" });
 
     const chat = await Chat.findById(message.chat).populate("members");
 
-    if (message.file) {
-      const filePath = path.join(__dirname, "../public", message.file);
+    if (message.file && message.file.name) {
+      const filePath = path.join(__dirname, "../public", message.file.name);
       fs.unlink(filePath, (err) => {
         if (err) {
           console.error("Error deleting file:", err);
@@ -96,6 +101,7 @@ router.delete("/:id", isAuth, async (req, res) => {
 
     return res.json({ msg: "Deleted message", chat });
   } catch (e) {
+    console.log(e);
     return res.status(400).json(e);
   }
 });

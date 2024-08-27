@@ -27,9 +27,9 @@ const DeleteMessageDialog = ({ id, open, setOpen }: Props) => {
   });
   const queryClient = useQueryClient();
   const deleteMessageHandler = async () => {
+    console.log("delete");
     remove(id, {
       onSuccess(data) {
-        toast.success(data.msg);
         queryClient.invalidateQueries({ queryKey: ["chats"] });
       },
       onError(e: any) {

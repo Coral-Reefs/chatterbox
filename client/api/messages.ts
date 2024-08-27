@@ -43,6 +43,7 @@ export const useMessageActions = () => {
   };
 
   const deleteMessage = async (id: any) => {
+    console.log("id", id);
     const token = await session?.getToken();
     const res = await axios.delete(`${url}/${id}`, {
       headers: {

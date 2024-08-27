@@ -116,6 +116,26 @@ router.post("/group", isAuth, upload.single("image"), async (req, res) => {
   return res.json({ msg: "Created group", chat });
 });
 
+router.post("/group/:id", isAuth, async (req, res) => {
+  // req.body = new member id
+
+  const chat = await Chat.findById(req.params.id);
+
+  const addMembersPromises = req.body.map(async (userId) => {
+    await ChatMember.create({
+      user: userId,
+      chat: chat._id,
+    });
+
+    chat.members.push(userId);
+  });
+
+  await Promise.all(addMembersPromises);
+  await chat.save();
+
+  return res.json({ msg: "Added new members to group", chat });
+});
+
 router.delete("/:chatId", isAuth, async (req, res) => {
   const chat = await Chat.findById(req.params.chatId);
   if (!chat) return res.status(400).json({ msg: "Chat not found" });
